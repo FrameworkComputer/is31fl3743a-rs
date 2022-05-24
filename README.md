@@ -23,7 +23,7 @@
  ```
 
  By default this version will only contain the core driver. 
- To use a preconfigured device, such as the [Adafruit CharliePlex LED Matrix Bonnet](https://www.adafruit.com/product/3467), 
+ To use a preconfigured device (currently just [Adafruit IS31FL3741 13x9 PWM RGB LED Matrix](https://www.adafruit.com/product/5201)), 
  you would need to change this line to include that device:
 
  ```toml
