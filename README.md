@@ -1,5 +1,5 @@
 [![Crates.io](https://img.shields.io/crates/v/is31fl3741)](https://crates.io/crates/is31fl3741)
-[![docs.rs](https://img.shields.io/docsrs/is31fl3741)](https://docs.rs/is31fl3731/latest/is31fl3741/)
+[![docs.rs](https://img.shields.io/docsrs/is31fl3741)](https://docs.rs/is31fl3741/latest/is31fl3741/)
 
 [![lint](https://github.com/stillinbeta/is31fl3741/actions/workflows/lint.yml/badge.svg)](https://github.com/gleich/is31fl3741/actions/workflows/lint.yml)
 [![build](https://github.com/stillinbeta/is31fl3741/actions/workflows/build.yml/badge.svg)](https://github.com/gleich/is31fl3741/actions/workflows/build.yml)
