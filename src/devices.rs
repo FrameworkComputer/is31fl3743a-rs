@@ -1,311 +1,184 @@
 #[allow(unused_imports)]
-use crate::{Error, IS31FL3731};
+use crate::{Error, IS31FL3741};
 #[allow(unused_imports)]
 use embedded_hal::blocking::delay::DelayMs;
 #[allow(unused_imports)]
 use embedded_hal::blocking::i2c::Write;
 
-#[cfg(feature = "charlie_bonnet")]
-pub struct CharlieBonnet;
-#[cfg(feature = "charlie_wing")]
-pub struct CharlieWing;
-#[cfg(feature = "keybow_2040")]
-pub struct Keybow2040<I2C> {
-    device: IS31FL3731<I2C>,
-}
-#[cfg(feature = "led_shim")]
-pub struct LEDShim<I2C> {
-    device: IS31FL3731<I2C>,
-}
-#[cfg(feature = "matrix")]
-pub struct Matrix;
-#[cfg(feature = "rgb_matrix_5x5")]
-pub struct RGBMatrix5x5<I2C> {
-    device: IS31FL3731<I2C>,
-}
-#[cfg(feature = "scroll_phat_hd")]
-pub struct ScrollPhatHD;
-
-#[cfg(feature = "charlie_bonnet")]
-impl CharlieBonnet {
-    pub fn configure<I2C>(i2c: I2C) -> IS31FL3731<I2C> {
-        IS31FL3731 {
-            i2c,
-            address: 0x74,
-            frame: 0,
-            width: 16,
-            height: 8,
-            calc_pixel: |x: u8, y: u8| -> u8 {
-                if x >= 8 {
-                    (x - 6) * 16 - (y + 1)
-                } else {
-                    (x + 1) * 16 + (7 - y)
-                }
-            },
-        }
-    }
+#[cfg(feature = "adafruit_rgb_13x9")]
+pub struct AdafruitRGB13x9<I2C> {
+    pub device: IS31FL3741<I2C>,
 }
 
-#[cfg(feature = "charlie_wing")]
-impl CharlieWing {
-    pub fn configure<I2C>(i2c: I2C) -> IS31FL3731<I2C> {
-        IS31FL3731 {
-            i2c,
-            address: 0x74,
-            frame: 0,
-            width: 15,
-            height: 7,
-            calc_pixel: |x: u8, y: u8| -> u8 {
-                let mut x = x;
-                let mut y = y;
-                if x > 7 {
-                    x -= 15;
-                    y += 8;
-                } else {
-                    y = 7 - y
-                }
-                x * 16 + y
-            },
-        }
-    }
-}
-
-#[cfg(feature = "keybow_2040")]
-impl<I2C, I2cError> Keybow2040<I2C>
+#[cfg(feature = "adafruit_rgb_13x9")]
+impl<I2C, I2cError> AdafruitRGB13x9<I2C>
 where
     I2C: Write<Error = I2cError>,
 {
-    pub fn configure(i2c: I2C) -> Self {
-        Self {
-            device: IS31FL3731 {
+    pub fn unwrap(self) -> I2C {
+        self.device.i2c
+    }
+
+    pub fn set_scaling(&mut self, scale: u8) -> Result<(), I2cError> {
+        self.device.set_scaling(scale)
+    }
+
+    pub fn configure(i2c: I2C) -> AdafruitRGB13x9<I2C> {
+        AdafruitRGB13x9 {
+            device: IS31FL3741 {
                 i2c,
-                address: 0x74,
-                frame: 0,
-                width: 16,
+                address: 0x30,
+                width: 13 * 9,
                 height: 3,
-                calc_pixel: |x: u8, y: u8| -> u8 {
-                    let lookup = [
-                        [120, 88, 104],
-                        [136, 40, 72],
-                        [112, 80, 96],
-                        [128, 32, 64],
-                        [121, 89, 105],
-                        [137, 41, 73],
-                        [113, 81, 97],
-                        [129, 33, 65],
-                        [122, 90, 106],
-                        [138, 25, 74],
-                        [114, 82, 98],
-                        [130, 17, 66],
-                        [123, 91, 107],
-                        [139, 26, 75],
-                        [115, 83, 99],
-                        [131, 18, 67],
+                calc_pixel: |x: u8, y: u8| -> (u8, u8) {
+                    let lookup: [[u16; 3]; 13 * 9] = [
+                        [240, 241, 242],
+                        [245, 243, 244],
+                        [246, 247, 248],
+                        [251, 249, 250],
+                        [252, 253, 254],
+                        [257, 255, 256],
+                        [258, 259, 260],
+                        [263, 261, 262],
+                        [264, 265, 266],
+                        [269, 267, 268],
+                        [342, 343, 344],
+                        [347, 345, 346],
+                        [350, 348, 349],
+                        [150, 151, 152],
+                        [155, 153, 154],
+                        [156, 157, 158],
+                        [161, 159, 160],
+                        [162, 163, 164],
+                        [167, 165, 166],
+                        [168, 169, 170],
+                        [173, 171, 172],
+                        [174, 175, 176],
+                        [179, 177, 178],
+                        [315, 316, 317],
+                        [320, 318, 319],
+                        [323, 321, 322],
+                        [120, 121, 122],
+                        [125, 123, 124],
+                        [126, 127, 128],
+                        [131, 129, 130],
+                        [132, 133, 134],
+                        [137, 135, 136],
+                        [138, 139, 140],
+                        [143, 141, 142],
+                        [144, 145, 146],
+                        [149, 147, 148],
+                        [306, 307, 308],
+                        [311, 309, 310],
+                        [314, 312, 313],
+                        [90, 91, 92],
+                        [95, 93, 94],
+                        [96, 97, 98],
+                        [101, 99, 100],
+                        [102, 103, 104],
+                        [107, 105, 106],
+                        [108, 109, 110],
+                        [113, 111, 112],
+                        [114, 115, 116],
+                        [119, 117, 118],
+                        [297, 298, 299],
+                        [302, 300, 301],
+                        [305, 303, 304],
+                        [60, 61, 62],
+                        [65, 63, 64],
+                        [66, 67, 68],
+                        [71, 69, 70],
+                        [72, 73, 74],
+                        [77, 75, 76],
+                        [78, 79, 80],
+                        [83, 81, 82],
+                        [84, 85, 86],
+                        [89, 87, 88],
+                        [288, 289, 290],
+                        [293, 291, 292],
+                        [296, 294, 295],
+                        [30, 31, 32],
+                        [35, 33, 34],
+                        [36, 37, 38],
+                        [41, 39, 40],
+                        [42, 43, 44],
+                        [47, 45, 46],
+                        [48, 49, 50],
+                        [53, 51, 52],
+                        [54, 55, 56],
+                        [59, 57, 58],
+                        [279, 280, 281],
+                        [284, 282, 283],
+                        [287, 285, 286],
+                        [0, 1, 2],
+                        [5, 3, 4],
+                        [6, 7, 8],
+                        [11, 9, 10],
+                        [12, 13, 14],
+                        [17, 15, 16],
+                        [18, 19, 20],
+                        [23, 21, 22],
+                        [24, 25, 26],
+                        [29, 27, 28],
+                        [270, 271, 272],
+                        [275, 273, 274],
+                        [278, 276, 277],
+                        [210, 211, 212],
+                        [215, 213, 214],
+                        [216, 217, 218],
+                        [221, 219, 220],
+                        [222, 223, 224],
+                        [227, 225, 226],
+                        [228, 229, 230],
+                        [233, 231, 232],
+                        [234, 235, 236],
+                        [239, 237, 238],
+                        [333, 334, 335],
+                        [338, 336, 337],
+                        [341, 339, 340],
+                        [180, 181, 182],
+                        [185, 183, 184],
+                        [186, 187, 188],
+                        [191, 189, 190],
+                        [192, 193, 194],
+                        [197, 195, 196],
+                        [198, 199, 200],
+                        [203, 201, 202],
+                        [204, 205, 206],
+                        [209, 207, 208],
+                        [324, 325, 326],
+                        [329, 327, 328],
+                        [332, 330, 331],
                     ];
-                    lookup[x as usize][y as usize]
+                    let addr = lookup[x as usize][y as usize];
+                    if addr < 180 {
+                        (addr as u8, 0)
+                    } else {
+                        ((addr - 180) as u8, 1)
+                    }
                 },
             },
         }
     }
 
     pub fn pixel_rgb(&mut self, x: u8, y: u8, r: u8, g: u8, b: u8) -> Result<(), Error<I2cError>> {
-        let x = (4 * (3 - x)) + y;
-        self.device.pixel(x, 0, r)?;
+        let x = x + y * 13;
+        self.device.pixel(x, 2, r)?;
         self.device.pixel(x, 1, g)?;
-        self.device.pixel(x, 2, b)?;
+        self.device.pixel(x, 0, b)?;
         Ok(())
     }
-}
 
-#[cfg(feature = "led_shim")]
-impl<I2C, I2cError> LEDShim<I2C>
-where
-    I2C: Write<Error = I2cError>,
-{
-    pub fn configure(i2c: I2C) -> Self {
-        Self {
-            device: IS31FL3731 {
-                i2c,
-                address: 0x75,
-                frame: 0,
-                width: 28,
-                height: 3,
-                calc_pixel: |x: u8, y: u8| -> u8 {
-                    if y == 0 {
-                        if x < 7 {
-                            return 118 - x;
-                        }
-                        if x < 15 {
-                            return 141 - x;
-                        }
-                        if x < 21 {
-                            return 106 + x;
-                        }
-                        if x == 21 {
-                            return 14;
-                        }
-                        return x - 14;
-                    }
-                    if y == 1 {
-                        if x < 2 {
-                            return 69 - x;
-                        }
-                        if x < 7 {
-                            return 86 - x;
-                        }
-                        if x < 12 {
-                            return 28 - x;
-                        }
-                        if x < 14 {
-                            return 45 - x;
-                        }
-                        if x == 14 {
-                            return 47;
-                        }
-                        if x == 15 {
-                            return 41;
-                        }
-                        if x < 21 {
-                            return x + 9;
-                        }
-                        if x == 21 {
-                            return 95;
-                        }
-                        if x < 26 {
-                            return x + 67;
-                        }
-                        return x + 50;
-                    }
-
-                    if x == 0 {
-                        return 85;
-                    }
-                    if x < 7 {
-                        return 102 - x;
-                    }
-                    if x < 11 {
-                        return 44 - x;
-                    }
-                    if x == 14 {
-                        return 63;
-                    }
-                    if x < 17 {
-                        return 42 + x;
-                    }
-                    if x < 21 {
-                        return x + 25;
-                    }
-                    if x == 21 {
-                        return 111;
-                    }
-                    if x < 27 {
-                        return x + 83;
-                    }
-
-                    93
-                },
-            },
-        }
+    pub fn setup<DEL: DelayMs<u8>>(&mut self, delay: &mut DEL) -> Result<(), Error<I2cError>> {
+        self.device.setup(delay)
     }
-    pub fn pixel_rgb(&mut self, x: u8, r: u8, g: u8, b: u8) -> Result<(), Error<I2cError>> {
-        self.device.pixel(x, 0, r)?;
-        self.device.pixel(x, 1, g)?;
-        self.device.pixel(x, 2, b)?;
+
+    pub fn fill_rgb(&mut self, r: u8, g: u8, b: u8) -> Result<(), Error<I2cError>> {
+        for x in 0..13 {
+            for y in 0..9 {
+                self.pixel_rgb(x, y, r, g, b)?;
+            }
+        }
         Ok(())
-    }
-}
-
-#[cfg(feature = "matrix")]
-impl Matrix {
-    pub fn configure<I2C>(i2c: I2C) -> IS31FL3731<I2C> {
-        IS31FL3731 {
-            i2c,
-            address: 0x74,
-            frame: 0,
-            width: 16,
-            height: 9,
-            calc_pixel: |x: u8, y: u8| -> u8 { x + y * 16 },
-        }
-    }
-}
-
-#[cfg(feature = "rgb_matrix_5x5")]
-impl<I2C, I2cError> RGBMatrix5x5<I2C>
-where
-    I2C: Write<Error = I2cError>,
-{
-    pub fn configure(i2c: I2C) -> Self {
-        Self {
-            device: IS31FL3731 {
-                i2c,
-                address: 0x75,
-                frame: 0,
-                width: 25,
-                height: 3,
-                calc_pixel: |x: u8, y: u8| -> u8 {
-                    let lookup = [
-                        [118, 69, 85],
-                        [117, 68, 101],
-                        [116, 84, 100],
-                        [115, 83, 99],
-                        [114, 82, 98],
-                        [132, 19, 35],
-                        [133, 20, 36],
-                        [134, 21, 37],
-                        [112, 80, 96],
-                        [113, 81, 97],
-                        [131, 18, 34],
-                        [130, 17, 50],
-                        [129, 33, 49],
-                        [128, 32, 48],
-                        [127, 47, 63],
-                        [125, 28, 44],
-                        [124, 27, 43],
-                        [123, 26, 42],
-                        [122, 25, 58],
-                        [121, 41, 57],
-                        [126, 29, 45],
-                        [15, 95, 111],
-                        [8, 89, 105],
-                        [9, 90, 106],
-                        [10, 91, 107],
-                    ];
-                    lookup[x as usize][y as usize]
-                },
-            },
-        }
-    }
-
-    pub fn pixel_rgb(&mut self, x: u8, y: u8, r: u8, g: u8, b: u8) -> Result<(), Error<I2cError>> {
-        let x = x + y * 5;
-        self.device.pixel(x, 0, r)?;
-        self.device.pixel(x, 1, g)?;
-        self.device.pixel(x, 2, b)?;
-        Ok(())
-    }
-}
-
-#[cfg(feature = "scroll_phat_hd")]
-impl ScrollPhatHD {
-    pub fn configure<I2C>(i2c: I2C) -> IS31FL3731<I2C> {
-        IS31FL3731 {
-            i2c,
-            address: 0x74,
-            frame: 0,
-            width: 17,
-            height: 7,
-            calc_pixel: |x: u8, y: u8| -> u8 {
-                let mut x = x;
-                let mut y = y;
-                if x <= 8 {
-                    x = 8 - x;
-                    y = 6 - y;
-                } else {
-                    x -= 8;
-                    y -= 8;
-                }
-                x * 16 + y
-            },
-        }
     }
 }

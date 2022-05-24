@@ -1,29 +1,25 @@
 [package] 
-name = "is31fl3731"
-version = "1.0.0"
+name = "is31fl3741"
+version = "0.1.0"
 edition = "2021"
-authors = ["Matt Gleich"]
+authors = ["Liz Frost"]
 categories = ["embedded", "no-std"]
-description = "Driver for Lumissil Microsystem's IS31FL3731 IC"
+description = "Driver for Lumissil Microsystem's IS31FL3741 IC"
 license = "MIT"
-repository = "https://github.com/gleich/is31fl3731"
+repository = "https://github.com/stillinbeta/is31fl3741"
 readme = "README.md"
 
 [dependencies]
 embedded-hal = "0.2.6"
 
 [dev-dependencies]
-rppal = {version = "0.13.1", features = ["hal"]}
+cortex-m-rt = "0.6.10"
+panic-halt = "0.2.0"
+stm32g0xx-hal = {version = "0.1.3", features = ["rt", "stm32g071"]}
 
 [features]
-charlie_bonnet = []
-charlie_wing = []
-keybow_2040 = []
-led_shim = []
-matrix = []
-rgb_matrix_5x5 = []
-scroll_phat_hd = []
+adafruit_rgb_13x9 = []
 
 [[example]]
-name = "rpi"
-required-features = ["charlie_bonnet"]
+name = "stm32"
+required-features = ["adafruit_rgb_13x9"]

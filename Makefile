@@ -1,5 +1,2 @@
 build-all:
-	cargo build --target=armv7-unknown-linux-gnueabihf --examples --all-features
-
-dev-deploy: build-all
-	scp target/armv7-unknown-linux-gnueabihf/debug/examples/rpi pi@mgdev.local:~/is31fl3731
+	cargo build --target=thumbv6m-none-eabi --examples --all-features
