@@ -30,6 +30,13 @@
  is31fl3741 = { version = "0.1.0", features = ["adafruit13x9"] }
  ```
 
+## Graphics
+
+This driver contains optional support for the [embedded-graphics](https://docs.rs/embedded-graphics/latest/embedded_graphics/) library.
+Enable the `embedded_graphics` feature to use it. 
+
+The `gaypride` example shows off a use of this.
+
 ## Inspiration
  This driver is ~~ripped off~~ modified from [gleich](https://github.com/gleich/)'s [is31fl3731 crate](https://github.com/gleich/is31fl3731). 
  I was originally planning on just making a PR, but the driver ended up too differet.

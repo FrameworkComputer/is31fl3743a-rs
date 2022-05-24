@@ -1,6 +1,8 @@
 #[allow(unused_imports)]
 use crate::{Error, IS31FL3741};
 #[allow(unused_imports)]
+use core::convert::TryFrom;
+#[allow(unused_imports)]
 use embedded_hal::blocking::delay::DelayMs;
 #[allow(unused_imports)]
 use embedded_hal::blocking::i2c::Write;
@@ -8,6 +10,46 @@ use embedded_hal::blocking::i2c::Write;
 #[cfg(feature = "adafruit_rgb_13x9")]
 pub struct AdafruitRGB13x9<I2C> {
     pub device: IS31FL3741<I2C>,
+}
+
+#[cfg(feature = "embedded_graphics")]
+use embedded_graphics_core::{pixelcolor::Rgb888, prelude::*, primitives::Rectangle};
+
+#[cfg(all(feature = "adafruit_rgb_13x9", feature = "embedded_graphics"))]
+impl<I2C, I2cError> Dimensions for AdafruitRGB13x9<I2C>
+where
+    I2C: Write<Error = I2cError>,
+{
+    fn bounding_box(&self) -> Rectangle {
+        Rectangle::new(Point::zero(), Size::new(13, 9))
+    }
+}
+
+#[cfg(all(feature = "adafruit_rgb_13x9", feature = "embedded_graphics"))]
+impl<I2C, I2cError> DrawTarget for AdafruitRGB13x9<I2C>
+where
+    I2C: Write<Error = I2cError>,
+    I2cError:,
+{
+    type Color = Rgb888;
+    type Error = Error<I2cError>;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(coord, color) in pixels.into_iter() {
+            // Check if the pixel coordinates are out of bounds (negative or greater than
+            // (63,63)). `DrawTarget` implementation are required to discard any out of bounds
+            // pixels without returning an error or causing a panic.
+            if let Ok((x @ 0..=13, y @ 0..=9)) = coord.try_into() {
+                // Calculate the index in the framebuffer.
+                self.pixel_rgb(x as u8, y as u8, color.r(), color.g(), color.b())?
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(feature = "adafruit_rgb_13x9")]
