@@ -1,6 +1,6 @@
 [package] 
 name = "is31fl3741"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Liz Frost"]
 categories = ["embedded", "no-std"]
@@ -12,6 +12,9 @@ readme = "README.md"
 [dependencies]
 embedded-hal = "0.2.6"
 embedded-graphics-core = { optional = true, version = "0.3.3" }
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dev-dependencies]
 cortex-m-rt = "0.6.10"

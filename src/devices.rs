@@ -1,3 +1,4 @@
+// #[cfg_attr(docsrs, doc(cfg(feature = "adafruit_rgb_13x9")))]
 #[allow(unused_imports)]
 use crate::{Error, IS31FL3741};
 #[allow(unused_imports)]
