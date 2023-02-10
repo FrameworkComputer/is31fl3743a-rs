@@ -26,6 +26,22 @@ impl<I2C, I2cError> IS31FL3741<I2C>
 where
     I2C: Write<Error = I2cError>,
 {
+    /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
+    pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
+        // Extend by one, to add address to the beginning
+        let mut buf = [0x00; 0xB5];
+        buf[0] = 0x00; // set the initial address
+
+        buf[1..=0xB4].copy_from_slice(&brightnesses[..=0xB3]);
+        self.bank(Page::Pwm1)?;
+        self.write(&buf)?;
+
+        buf[1..=0xAB].copy_from_slice(&brightnesses[0xB4..=0xB4 + 0xAA]);
+        self.bank(Page::Pwm2)?;
+        self.write(&buf[..=0xAA])?;
+        Ok(())
+    }
+
     /// Fill the display with a single brightness. The brightness should range from 0 to 255.
     pub fn fill(&mut self, brightness: u8) -> Result<(), I2cError> {
         self.bank(Page::Pwm1)?;
