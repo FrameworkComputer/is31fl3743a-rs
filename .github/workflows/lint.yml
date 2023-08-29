@@ -11,7 +11,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -21,11 +21,9 @@ jobs:
               - 'rustfmt.toml'
               - '.github/workflows/**'
       - if: steps.changes.outputs.rust == 'true'
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
           components: rustfmt
-          override: true
       - if: steps.changes.outputs.rust == 'true'
         run: cargo fmt --check
 
