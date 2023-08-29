@@ -29,11 +29,11 @@ where
     /// Fill the display with a single brightness. The brightness should range from 0 to 255.
     pub fn fill(&mut self, brightness: u8) -> Result<(), I2cError> {
         self.bank(Page::Pwm1)?;
-        let mut buf = [brightness; 0xB4];
+        let mut buf = [brightness; 0xB5];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
         self.bank(Page::Pwm2)?;
-        self.write(&buf[..=0xAA])?;
+        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
@@ -89,11 +89,11 @@ where
     /// Set the current available to each LED. 0 is none, 255 is the maximum available
     pub fn set_scaling(&mut self, scale: u8) -> Result<(), I2cError> {
         self.bank(Page::Scale1)?;
-        let mut buf = [scale; 0xB4];
+        let mut buf = [scale; 0xB5];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
         self.bank(Page::Scale2)?;
-        self.write(&buf[..=0xAA])?;
+        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
