@@ -107,6 +107,11 @@ where
         Ok(())
     }
 
+    /// Set the PWM frequency
+    pub fn set_pwm_freq(&mut self, pwm: PwmFreq) -> Result<(), I2cError> {
+        self.write_register(Page::Config, addresses::PWM_FREQ_REGISTER, pwm as u8)
+    }
+
     fn write(&mut self, buf: &[u8]) -> Result<(), I2cError> {
         self.i2c.write(self.address, buf)
     }
@@ -137,9 +142,11 @@ where
 /// See the [data sheet](https://lumissil.com/assets/pdf/core/IS31FL3741A_DS.pdf)
 /// for more information on registers.
 pub mod addresses {
+    // In Page 4
     pub const CONFIG_REGISTER: u8 = 0x00;
     pub const CURRENT_REGISTER: u8 = 0x01;
     pub const PULL_UP_REGISTER: u8 = 0x02;
+    pub const PWM_FREQ_REGISTER: u8 = 0x36;
     pub const RESET_REGISTER: u8 = 0x3F;
     pub const SHUTDOWN: u8 = 0x0A;
 
@@ -163,10 +170,23 @@ impl<E> From<E> for Error<E> {
     }
 }
 
+#[repr(u8)]
 enum Page {
     Pwm1 = 0x00,
     Pwm2 = 0x01,
     Scale1 = 0x02,
     Scale2 = 0x03,
     Config = 0x04,
+}
+
+#[repr(u8)]
+pub enum PwmFreq {
+    /// 29kHz
+    P29k = 0x00,
+    /// 3.6kHz
+    P3k6 = 0x03,
+    /// 1.8kHz
+    P1k8 = 0x07,
+    /// 900Hz
+    P900 = 0x0B,
 }
