@@ -125,6 +125,15 @@ where
         Ok(())
     }
 
+    /// How many SW rows to enable
+    pub fn sw_enablement(&mut self, setting: SwSetting) -> Result<(), I2cError> {
+        let config_register = 1; // Shutdown disable
+
+        let new_val = (config_register & 0x0F) | (setting as u8) << 4;
+        self.write_register(Page::Config, addresses::CONFIG_REGISTER, new_val)?;
+        Ok(())
+    }
+
     /// Set the PWM frequency
     pub fn set_pwm_freq(&mut self, pwm: PwmFreq) -> Result<(), I2cError> {
         self.write_register(Page::Config, addresses::PWM_FREQ_REGISTER, pwm as u8)
@@ -220,4 +229,26 @@ pub enum PwmFreq {
     P1k8 = 0x07,
     /// 900Hz
     P900 = 0x0B,
+}
+
+#[repr(u8)]
+pub enum SwSetting {
+    // SW1-SW9 active
+    Sw1Sw9 = 0b0000,
+    // SW1-SW8 active, SW9 not active
+    Sw1Sw8 = 0b0001,
+    // SW1-SW7 active, SW8-SW9 not active
+    Sw1Sw7 = 0b0010,
+    // SW1-SW6 active, SW7-SW9 not active
+    Sw1Sw6 = 0b0011,
+    // SW1-SW5 active, SW6-SW9 not active
+    Sw1Sw5 = 0b0100,
+    // SW1-SW4 active, SW5-SW9 not activee
+    Sw1Sw4 = 0b0101,
+    // SW1-SW3 active, SW4-SW9 not active
+    Sw1Sw3 = 0b0110,
+    // SW1-SW2 active, SW3-SW9 not active
+    Sw1Sw2 = 0b0111,
+    // All CSx pins only act as current sink, no scanning
+    NoScan = 0b1000,
 }
