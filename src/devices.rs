@@ -5,6 +5,7 @@ use crate::{Error, IS31FL3741};
 use core::convert::TryFrom;
 #[allow(unused_imports)]
 use embedded_hal::blocking::delay::DelayMs;
+use embedded_hal::blocking::i2c::Read;
 #[allow(unused_imports)]
 use embedded_hal::blocking::i2c::Write;
 
@@ -20,6 +21,7 @@ use embedded_graphics_core::{pixelcolor::Rgb888, prelude::*, primitives::Rectang
 impl<I2C, I2cError> Dimensions for AdafruitRGB13x9<I2C>
 where
     I2C: Write<Error = I2cError>,
+    I2C: Read<Error = I2cError>,
 {
     fn bounding_box(&self) -> Rectangle {
         Rectangle::new(Point::zero(), Size::new(13, 9))
@@ -30,6 +32,7 @@ where
 impl<I2C, I2cError> DrawTarget for AdafruitRGB13x9<I2C>
 where
     I2C: Write<Error = I2cError>,
+    I2C: Read<Error = I2cError>,
     I2cError:,
 {
     type Color = Rgb888;
@@ -57,6 +60,7 @@ where
 impl<I2C, I2cError> AdafruitRGB13x9<I2C>
 where
     I2C: Write<Error = I2cError>,
+    I2C: Read<Error = I2cError>,
 {
     pub fn unwrap(self) -> I2C {
         self.device.i2c

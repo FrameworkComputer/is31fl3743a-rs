@@ -4,6 +4,7 @@
 pub mod devices;
 
 use embedded_hal::blocking::delay::DelayMs;
+use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 
 /// A struct to integrate with a new IS31FL3741 powered device.
@@ -25,6 +26,7 @@ pub struct IS31FL3741<I2C> {
 impl<I2C, I2cError> IS31FL3741<I2C>
 where
     I2C: Write<Error = I2cError>,
+    I2C: Read<Error = I2cError>,
 {
     /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
     pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
@@ -136,6 +138,19 @@ where
         self.bank(bank)?;
         self.write(&[register, value])?;
         Ok(())
+    }
+
+    fn read_u8(&mut self, register: u8) -> Result<u8, I2cError> {
+        let mut buf = [0x00];
+        self.i2c.write(self.address, &[register])?;
+        self.i2c.read(self.address, &mut buf)?;
+        Ok(buf[0])
+    }
+
+    fn read_register(&mut self, bank: Page, register: u8) -> Result<u8, I2cError> {
+        self.bank(bank)?;
+        let value = self.read_u8(register)?;
+        Ok(value)
     }
 
     fn bank(&mut self, bank: Page) -> Result<(), I2cError> {
