@@ -6,7 +6,7 @@ authors = ["Liz Frost", "Daniel Schaefer"]
 categories = ["embedded", "no-std"]
 description = "Driver for Lumissil Microsystem's IS31FL3741 IC"
 license = "MIT"
-repository = "https://github.com/stillinbeta/is31fl3741"
+repository = "https://github.com/FrameworkComputer/is31fl3741-rs"
 readme = "README.md"
 
 [dependencies]
