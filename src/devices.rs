@@ -1,6 +1,6 @@
 // #[cfg_attr(docsrs, doc(cfg(feature = "adafruit_rgb_13x9")))]
 #[allow(unused_imports)]
-use crate::{Error, IS31FL3741};
+use crate::{Error, IS31FL3743};
 #[allow(unused_imports)]
 use core::convert::TryFrom;
 #[allow(unused_imports)]
@@ -11,7 +11,7 @@ use embedded_hal::blocking::i2c::Write;
 
 #[cfg(feature = "adafruit_rgb_13x9")]
 pub struct AdafruitRGB13x9<I2C> {
-    pub device: IS31FL3741<I2C>,
+    pub device: IS31FL3743<I2C>,
 }
 
 #[cfg(feature = "embedded_graphics")]
@@ -72,7 +72,7 @@ where
 
     pub fn configure(i2c: I2C) -> AdafruitRGB13x9<I2C> {
         AdafruitRGB13x9 {
-            device: IS31FL3741 {
+            device: IS31FL3743 {
                 i2c,
                 address: 0x30,
                 width: 13 * 9,

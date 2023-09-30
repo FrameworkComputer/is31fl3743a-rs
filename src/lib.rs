@@ -1,14 +1,13 @@
 #![no_std]
 #![doc = include_str!("../README.md")]
 /// Preconfigured devices
-pub mod devices;
-
+//pub mod devices;
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 
-/// A struct to integrate with a new IS31FL3741 powered device.
-pub struct IS31FL3741<I2C> {
+/// A struct to integrate with a new IS31FL3743 powered device.
+pub struct IS31FL3743<I2C> {
     /// The i2c bus that is used to interact with the device. See implementation below for the
     /// trait methods required.
     pub i2c: I2C,
@@ -23,7 +22,7 @@ pub struct IS31FL3741<I2C> {
     pub calc_pixel: fn(x: u8, y: u8) -> (u8, u8),
 }
 
-impl<I2C, I2cError> IS31FL3741<I2C>
+impl<I2C, I2cError> IS31FL3743<I2C>
 where
     I2C: Write<Error = I2cError>,
     I2C: Read<Error = I2cError>,
@@ -31,27 +30,19 @@ where
     /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
     pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
         // Extend by one, to add address to the beginning
-        let mut buf = [0x00; 0xB5];
+        let mut buf = [0x00; 0xC6];
         buf[0] = 0x00; // set the initial address
-
-        buf[1..=0xB4].copy_from_slice(&brightnesses[..=0xB3]);
-        self.bank(Page::Pwm1)?;
+        self.bank(Page::Pwm)?;
         self.write(&buf)?;
-
-        buf[1..=0xAB].copy_from_slice(&brightnesses[0xB4..=0xB4 + 0xAA]);
-        self.bank(Page::Pwm2)?;
-        self.write(&buf[..=0xAA])?;
         Ok(())
     }
 
     /// Fill the display with a single brightness. The brightness should range from 0 to 255.
     pub fn fill(&mut self, brightness: u8) -> Result<(), I2cError> {
-        self.bank(Page::Pwm1)?;
-        let mut buf = [brightness; 0xB5];
+        self.bank(Page::Pwm)?;
+        let mut buf = [brightness; 0xC6];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
-        self.bank(Page::Pwm2)?;
-        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
@@ -84,8 +75,7 @@ where
             return Err(Error::InvalidLocation(y));
         }
         let (pixel, frame) = (self.calc_pixel)(x, y);
-        let bank = if frame == 0 { Page::Pwm1 } else { Page::Pwm2 };
-        self.write_register(bank, pixel, brightness)?;
+        self.write_register(Page::Pwm, pixel, brightness)?;
         Ok(())
     }
 
@@ -106,12 +96,10 @@ where
 
     /// Set the current available to each LED. 0 is none, 255 is the maximum available
     pub fn set_scaling(&mut self, scale: u8) -> Result<(), I2cError> {
-        self.bank(Page::Scale1)?;
-        let mut buf = [scale; 0xB5];
+        self.bank(Page::Scale)?;
+        let mut buf = [scale; 0xC6];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
-        self.bank(Page::Scale2)?;
-        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
@@ -187,8 +175,7 @@ pub mod addresses {
     pub const CURRENT_REGISTER: u8 = 0x01;
     pub const PULL_UP_REGISTER: u8 = 0x02;
     pub const PWM_FREQ_REGISTER: u8 = 0x36;
-    pub const RESET_REGISTER: u8 = 0x3F;
-    pub const SHUTDOWN: u8 = 0x0A;
+    pub const RESET_REGISTER: u8 = 0x2F;
 
     pub const PAGE_SELECT_REGISTER: u8 = 0xFD;
     pub const CONFIG_LOCK_REGISTER: u8 = 0xFE;
@@ -212,11 +199,9 @@ impl<E> From<E> for Error<E> {
 
 #[repr(u8)]
 enum Page {
-    Pwm1 = 0x00,
-    Pwm2 = 0x01,
-    Scale1 = 0x02,
-    Scale2 = 0x03,
-    Config = 0x04,
+    Pwm = 0x00,
+    Scale = 0x01,
+    Config = 0x02,
 }
 
 #[repr(u8)]
