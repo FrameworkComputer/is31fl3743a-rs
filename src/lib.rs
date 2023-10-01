@@ -124,11 +124,6 @@ where
         Ok(())
     }
 
-    /// Set the PWM frequency
-    pub fn set_pwm_freq(&mut self, pwm: PwmFreq) -> Result<(), I2cError> {
-        self.write_register(Page::Config, addresses::PWM_FREQ_REGISTER, pwm as u8)
-    }
-
     fn write(&mut self, buf: &[u8]) -> Result<(), I2cError> {
         self.i2c.write(self.address, buf)
     }
@@ -176,7 +171,6 @@ pub mod addresses {
     pub const CONFIG_REGISTER: u8 = 0x00;
     pub const CURRENT_REGISTER: u8 = 0x01;
     pub const PULL_UP_REGISTER: u8 = 0x02;
-    pub const PWM_FREQ_REGISTER: u8 = 0x36;
     pub const RESET_REGISTER: u8 = 0x2F;
 
     pub const PAGE_SELECT_REGISTER: u8 = 0xFD;
@@ -204,18 +198,6 @@ enum Page {
     Pwm = 0x00,
     Scale = 0x01,
     Config = 0x02,
-}
-
-#[repr(u8)]
-pub enum PwmFreq {
-    /// 29kHz
-    P29k = 0x00,
-    /// 3.6kHz
-    P3k6 = 0x03,
-    /// 1.8kHz
-    P1k8 = 0x07,
-    /// 900Hz
-    P900 = 0x0B,
 }
 
 #[repr(u8)]
