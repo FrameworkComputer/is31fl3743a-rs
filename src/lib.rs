@@ -6,7 +6,7 @@ use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 
-/// A struct to integrate with a new IS31FL3743 powered device.
+/// A struct to integrate with a new IS31FL3743A powered device.
 pub struct IS31FL3743<I2C> {
     /// The i2c bus that is used to interact with the device. See implementation below for the
     /// trait methods required.
@@ -18,8 +18,8 @@ pub struct IS31FL3743<I2C> {
     /// Height of the LED matrix
     pub height: u8,
     /// Method to convert an x,y coordinate pair to a binary address that can be accessed using the
-    /// bus. second value is the page the LED is on
-    pub calc_pixel: fn(x: u8, y: u8) -> (u8, u8),
+    /// bus.
+    pub calc_pixel: fn(x: u8, y: u8) -> u8,
 }
 
 impl<I2C, I2cError> IS31FL3743<I2C>
@@ -76,7 +76,7 @@ where
         if y > self.height {
             return Err(Error::InvalidLocation(y));
         }
-        let (pixel, frame) = (self.calc_pixel)(x, y);
+        let pixel = (self.calc_pixel)(x, y);
         self.write_register(Page::Pwm, pixel, brightness)?;
         Ok(())
     }
@@ -169,7 +169,7 @@ where
     }
 }
 
-/// See the [data sheet](https://lumissil.com/assets/pdf/core/IS31FL3741A_DS.pdf)
+/// See the [data sheet](https://lumissil.com/assets/pdf/core/IS31FL3743A_DS.pdf)
 /// for more information on registers.
 pub mod addresses {
     // In Page 4
