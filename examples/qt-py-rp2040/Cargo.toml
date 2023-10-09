@@ -1,0 +1,19 @@
+[package] 
+edition = "2021"
+name = "is31fl3741-qt-py-rp2040"
+version = "0.3.0"
+
+[dependencies]
+embedded-hal = "0.2.7"
+embedded-graphics-core = { optional = true, version = "0.4.0" }
+
+cortex-m-rt = "0.7.3"
+cortex-m = "0.7.7"
+panic-halt = "0.2.0"
+rp-pico = "0.7.0"
+adafruit-qt-py-rp2040 = {version = "0.6.0", features = ["rt"]}
+tinybmp = "0.5.0"
+embedded-graphics = "0.8.1"
+fugit = "0.3.7"
+
+is31fl3743a = { path = "../.." }
