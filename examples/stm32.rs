@@ -6,7 +6,7 @@ use panic_halt as _;
 
 // use cortex_m::delay::Delay;
 use cortex_m_rt::entry;
-use is31fl3741::devices::AdafruitRGB13x9;
+use is31fl3743::devices::AdafruitRGB13x9;
 
 use stm32g0xx_hal::{
     prelude::*,
@@ -39,14 +39,8 @@ fn main() -> ! {
     matrix.set_scaling(0xFF).expect("failed to set scaling");
 
     loop {
-        for y in 0..9 {
-            for x in 0..13 {
-                matrix
-                    .pixel_rgb(x, y, 0x1E, 0x90, 0xFF)
-                    .expect("couldn't turn on");
-                delay.delay_ms(100u8);
-                matrix.pixel_rgb(x, y, 0, 0, 0).expect("couldn't turn off");
-            }
-        }
+        matrix.fill(0xFF).expect("failed to turn on all LEDs");
+        delay.delay_ms(100u8);
+        matrix.fill(0x00).expect("failed to turn off all LEDs");
     }
 }

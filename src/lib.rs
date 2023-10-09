@@ -1,13 +1,13 @@
 #![no_std]
 #![doc = include_str!("../README.md")]
 /// Preconfigured devices
-pub mod devices;
-
+//pub mod devices;
 use embedded_hal::blocking::delay::DelayMs;
+use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 
-/// A struct to integrate with a new IS31FL3741 powered device.
-pub struct IS31FL3741<I2C> {
+/// A struct to integrate with a new IS31FL3743A powered device.
+pub struct IS31FL3743<I2C> {
     /// The i2c bus that is used to interact with the device. See implementation below for the
     /// trait methods required.
     pub i2c: I2C,
@@ -18,38 +18,33 @@ pub struct IS31FL3741<I2C> {
     /// Height of the LED matrix
     pub height: u8,
     /// Method to convert an x,y coordinate pair to a binary address that can be accessed using the
-    /// bus. second value is the page the LED is on
-    pub calc_pixel: fn(x: u8, y: u8) -> (u8, u8),
+    /// bus.
+    pub calc_pixel: fn(x: u8, y: u8) -> u8,
 }
 
-impl<I2C, I2cError> IS31FL3741<I2C>
+impl<I2C, I2cError> IS31FL3743<I2C>
 where
     I2C: Write<Error = I2cError>,
+    I2C: Read<Error = I2cError>,
 {
     /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
+    /// brightness slice must have 0xC5 elements
     pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
         // Extend by one, to add address to the beginning
-        let mut buf = [0x00; 0xB5];
+        let mut buf = [0x00; 0xC7];
         buf[0] = 0x00; // set the initial address
-
-        buf[1..=0xB4].copy_from_slice(&brightnesses[..=0xB3]);
-        self.bank(Page::Pwm1)?;
+        buf[1..=0xC6].copy_from_slice(brightnesses);
+        self.bank(Page::Pwm)?;
         self.write(&buf)?;
-
-        buf[1..=0xAB].copy_from_slice(&brightnesses[0xB4..=0xB4 + 0xAA]);
-        self.bank(Page::Pwm2)?;
-        self.write(&buf[..=0xAA])?;
         Ok(())
     }
 
     /// Fill the display with a single brightness. The brightness should range from 0 to 255.
     pub fn fill(&mut self, brightness: u8) -> Result<(), I2cError> {
-        self.bank(Page::Pwm1)?;
-        let mut buf = [brightness; 0xB5];
+        self.bank(Page::Pwm)?;
+        let mut buf = [brightness; 0xC7];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
-        self.bank(Page::Pwm2)?;
-        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
@@ -81,9 +76,8 @@ where
         if y > self.height {
             return Err(Error::InvalidLocation(y));
         }
-        let (pixel, frame) = (self.calc_pixel)(x, y);
-        let bank = if frame == 0 { Page::Pwm1 } else { Page::Pwm2 };
-        self.write_register(bank, pixel, brightness)?;
+        let pixel = (self.calc_pixel)(x, y);
+        self.write_register(Page::Pwm, pixel, brightness)?;
         Ok(())
     }
 
@@ -104,12 +98,10 @@ where
 
     /// Set the current available to each LED. 0 is none, 255 is the maximum available
     pub fn set_scaling(&mut self, scale: u8) -> Result<(), I2cError> {
-        self.bank(Page::Scale1)?;
-        let mut buf = [scale; 0xB5];
+        self.bank(Page::Scale)?;
+        let mut buf = [scale; 0xC7];
         buf[0] = 0x00; // set the initial address
         self.write(&buf)?;
-        self.bank(Page::Scale2)?;
-        self.write(&buf[..=0xAB])?;
         Ok(())
     }
 
@@ -123,9 +115,13 @@ where
         Ok(())
     }
 
-    /// Set the PWM frequency
-    pub fn set_pwm_freq(&mut self, pwm: PwmFreq) -> Result<(), I2cError> {
-        self.write_register(Page::Config, addresses::PWM_FREQ_REGISTER, pwm as u8)
+    /// How many SW rows to enable
+    pub fn sw_enablement(&mut self, setting: SwSetting) -> Result<(), I2cError> {
+        let config_register = self.read_register(Page::Config, addresses::CONFIG_REGISTER)?;
+
+        let new_val = (config_register & 0x0F) | (setting as u8) << 4;
+        self.write_register(Page::Config, addresses::CONFIG_REGISTER, new_val)?;
+        Ok(())
     }
 
     fn write(&mut self, buf: &[u8]) -> Result<(), I2cError> {
@@ -136,6 +132,19 @@ where
         self.bank(bank)?;
         self.write(&[register, value])?;
         Ok(())
+    }
+
+    fn read_u8(&mut self, register: u8) -> Result<u8, I2cError> {
+        let mut buf = [0x00];
+        self.i2c.write(self.address, &[register])?;
+        self.i2c.read(self.address, &mut buf)?;
+        Ok(buf[0])
+    }
+
+    fn read_register(&mut self, bank: Page, register: u8) -> Result<u8, I2cError> {
+        self.bank(bank)?;
+        let value = self.read_u8(register)?;
+        Ok(value)
     }
 
     fn bank(&mut self, bank: Page) -> Result<(), I2cError> {
@@ -155,16 +164,14 @@ where
     }
 }
 
-/// See the [data sheet](https://lumissil.com/assets/pdf/core/IS31FL3741A_DS.pdf)
+/// See the [data sheet](https://lumissil.com/assets/pdf/core/IS31FL3743A_DS.pdf)
 /// for more information on registers.
 pub mod addresses {
     // In Page 4
     pub const CONFIG_REGISTER: u8 = 0x00;
     pub const CURRENT_REGISTER: u8 = 0x01;
     pub const PULL_UP_REGISTER: u8 = 0x02;
-    pub const PWM_FREQ_REGISTER: u8 = 0x36;
-    pub const RESET_REGISTER: u8 = 0x3F;
-    pub const SHUTDOWN: u8 = 0x0A;
+    pub const RESET_REGISTER: u8 = 0x2F;
 
     pub const PAGE_SELECT_REGISTER: u8 = 0xFD;
     pub const CONFIG_LOCK_REGISTER: u8 = 0xFE;
@@ -188,21 +195,33 @@ impl<E> From<E> for Error<E> {
 
 #[repr(u8)]
 enum Page {
-    Pwm1 = 0x00,
-    Pwm2 = 0x01,
-    Scale1 = 0x02,
-    Scale2 = 0x03,
-    Config = 0x04,
+    Pwm = 0x00,
+    Scale = 0x01,
+    Config = 0x02,
 }
 
 #[repr(u8)]
-pub enum PwmFreq {
-    /// 29kHz
-    P29k = 0x00,
-    /// 3.6kHz
-    P3k6 = 0x03,
-    /// 1.8kHz
-    P1k8 = 0x07,
-    /// 900Hz
-    P900 = 0x0B,
+pub enum SwSetting {
+    // SW1-SW11 active
+    Sw1Sw11 = 0b0000,
+    // SW1-SW10 active, SW11 not active
+    Sw1Sw10 = 0b0001,
+    // SW1-SW7 active, SW10-SW11 not active
+    Sw1Sw9 = 0b0010,
+    // SW1-SW8 active, SW9-SW11 not active
+    Sw1Sw8 = 0b0011,
+    // SW1-SW7 active, SW8-SW11 not active
+    Sw1Sw7 = 0b0100,
+    // SW1-SW6 active, SW7-SW11 not active
+    Sw1Sw6 = 0b0101,
+    // SW1-SW5 active, SW6-SW11 not active
+    Sw1Sw5 = 0b0110,
+    // SW1-SW4 active, SW5-SW11 not activee
+    Sw1Sw4 = 0b0111,
+    // SW1-SW3 active, SW4-SW11 not active
+    Sw1Sw3 = 0b1000,
+    // SW1-SW2 active, SW3-SW11 not active
+    Sw1Sw2 = 0b1001,
+    // All CSx pins only act as current sink, no scanning
+    NoScan = 0b1010,
 }
