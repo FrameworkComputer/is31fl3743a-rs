@@ -1,7 +1,7 @@
 #![no_std]
 #![doc = include_str!("../README.md")]
 /// Preconfigured devices
-//pub mod devices;
+pub mod devices;
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
