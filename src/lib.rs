@@ -28,7 +28,7 @@ where
     I2C: Read<Error = I2cError>,
 {
     /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
-    /// brightness slice must have 0xC5 elements
+    /// brightness slice must have 0xC6 elements
     pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
         // Extend by one, to add address to the beginning
         let mut buf = [0x00; 0xC7];
@@ -37,6 +37,15 @@ where
         self.bank(Page::Pwm)?;
         self.write(&buf)?;
         Ok(())
+    }
+
+    /// Read back the currently displayed matrix
+    pub fn read_matrix(&mut self) -> Result<[u8; 0xC6], I2cError> {
+        let mut buf = [0x00; 0xC6];
+        self.bank(Page::Pwm)?;
+        self.i2c.write(self.address, &[0x01])?;
+        self.i2c.read(self.address, &mut buf)?;
+        Ok(buf)
     }
 
     /// Fill the display with a single brightness. The brightness should range from 0 to 255.
@@ -63,6 +72,7 @@ where
         delay.delay_ms(10);
         // maximum current limiting
         self.write_register(Page::Config, addresses::CURRENT_REGISTER, 0xFF)?;
+
         self.shutdown(false)?;
         Ok(())
     }
@@ -90,9 +100,30 @@ where
     /// Send a reset message to the slave device. Delay is something that your device's HAL should
     /// provide which allows for the process to sleep for a certain amount of time (in this case 10
     /// MS to perform a reset).
+    /// This will result in all registers being restored to their defaults.
     pub fn reset<DEL: DelayMs<u8>>(&mut self, delay: &mut DEL) -> Result<(), I2cError> {
         self.write_register(Page::Config, addresses::RESET_REGISTER, addresses::RESET)?;
         delay.delay_ms(10);
+        Ok(())
+    }
+
+    /// Reset the controller and restore all registers
+    pub fn reset_restore<DEL: DelayMs<u8>>(
+        &mut self,
+        delay: &mut DEL,
+    ) -> Result<(), Error<I2cError>> {
+        // Back up registers
+        let prev_config = self.read_register(Page::Config, addresses::CONFIG_REGISTER)?;
+        // Assumes all scaling registers are set to the same value
+        let prev_scale = self.read_register(Page::Scale, 0x01)?;
+        let prev_brightness = self.read_matrix()?;
+
+        self.setup(delay)?;
+
+        // Restore registers
+        self.write_register(Page::Config, addresses::CONFIG_REGISTER, prev_config)?;
+        self.set_scaling(prev_scale)?;
+        self.fill_matrix(&prev_brightness)?;
         Ok(())
     }
 
@@ -121,6 +152,30 @@ where
 
         let new_val = (config_register & 0x0F) | (setting as u8) << 4;
         self.write_register(Page::Config, addresses::CONFIG_REGISTER, new_val)?;
+        Ok(())
+    }
+
+    /// Set the PWM frequency
+    pub fn set_pwm_freq<DEL: DelayMs<u8>>(
+        &mut self,
+        delay: &mut DEL,
+        pwm: PwmFreq,
+    ) -> Result<(), Error<I2cError>> {
+        // The default frequency, can't set it. Reset the controller and restore the registers
+        if let PwmFreq::P29k = pwm {
+            self.reset_restore(delay)?;
+            return Ok(());
+        }
+
+        // Enter test mode
+        self.write_register(Page::Config, addresses::TEST_MODE_REGISTER, 0x01)?;
+
+        // Set PWM
+        self.write(&[addresses::PWM_CONFIG_REGISTER, pwm as u8])?; // 488Hz
+
+        // Exit test mode
+        self.write_register(Page::Config, addresses::TEST_MODE_REGISTER, 0x00)?;
+
         Ok(())
     }
 
@@ -176,6 +231,9 @@ pub mod addresses {
     pub const PAGE_SELECT_REGISTER: u8 = 0xFD;
     pub const CONFIG_LOCK_REGISTER: u8 = 0xFE;
 
+    pub const TEST_MODE_REGISTER: u8 = 0xE0;
+    pub const PWM_CONFIG_REGISTER: u8 = 0xE2;
+
     pub const CONFIG_WRITE_ENABLE: u8 = 0b1100_0101;
     pub const RESET: u8 = 0xAE;
 }
@@ -198,6 +256,26 @@ enum Page {
     Pwm = 0x00,
     Scale = 0x01,
     Config = 0x02,
+}
+
+#[repr(u8)]
+pub enum PwmFreq {
+    /// 29kHz, the default. To set this, it'll reset the controller
+    P29k = 0xFF,
+    /// 31.25kHz
+    P31k25 = 0xE0,
+    /// 15.6kHz
+    P15k6 = 0x20,
+    /// 7.8kHz
+    P7k8 = 0x40,
+    /// 3.9kHz
+    P3k9 = 0x60,
+    /// 1.95kHz
+    P1k95 = 0x80,
+    /// 977Hz
+    P977 = 0xA0,
+    /// 488Hz
+    P488 = 0xC0,
 }
 
 #[repr(u8)]
