@@ -63,6 +63,7 @@ where
         delay.delay_ms(10);
         // maximum current limiting
         self.write_register(Page::Config, addresses::CURRENT_REGISTER, 0xFF)?;
+
         self.shutdown(false)?;
         Ok(())
     }
@@ -124,6 +125,20 @@ where
         Ok(())
     }
 
+    /// Set the PWM frequency
+    pub fn set_pwm_freq(&mut self, pwm: PwmFreq) -> Result<(), I2cError> {
+        // Enter test mode
+        self.write_register(Page::Config, addresses::TEST_MODE_REGISTER, 0x01)?;
+
+        // Set PWM
+        self.write(&[addresses::PWM_CONFIG_REGISTER, pwm as u8])?; // 488Hz
+
+        // Exit test mode
+        self.write_register(Page::Config, addresses::TEST_MODE_REGISTER, 0x00)?;
+
+        Ok(())
+    }
+
     fn write(&mut self, buf: &[u8]) -> Result<(), I2cError> {
         self.i2c.write(self.address, buf)
     }
@@ -176,6 +191,9 @@ pub mod addresses {
     pub const PAGE_SELECT_REGISTER: u8 = 0xFD;
     pub const CONFIG_LOCK_REGISTER: u8 = 0xFE;
 
+    pub const TEST_MODE_REGISTER: u8 = 0xE0;
+    pub const PWM_CONFIG_REGISTER: u8 = 0xE2;
+
     pub const CONFIG_WRITE_ENABLE: u8 = 0b1100_0101;
     pub const RESET: u8 = 0xAE;
 }
@@ -198,6 +216,23 @@ enum Page {
     Pwm = 0x00,
     Scale = 0x01,
     Config = 0x02,
+}
+
+#[repr(u8)]
+pub enum PwmFreq {
+    P31k25 = 0xE0,
+    /// 15.6kHz
+    P15k6 = 0x20,
+    /// 7.8kHz
+    P7k8 = 0x40,
+    /// 3.9kHz
+    P3k9 = 0x60,
+    /// 1.95kHz
+    P1k95 = 0x80,
+    /// 977Hz
+    P977 = 0xA0,
+    /// 488Hz
+    P448 = 0xC0,
 }
 
 #[repr(u8)]
