@@ -75,57 +75,12 @@ fn main() -> ! {
     matrix.set_scaling(0xFF).expect("failed to set scaling");
 
     loop {
-        matrix.device.pixel(0, 0, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(0, 1, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(0, 2, 0xFF).expect("couldn't turn on");
-
-        matrix.device.pixel(1, 0, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(1, 1, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(1, 2, 0xFF).expect("couldn't turn on");
-
-        matrix.device.pixel(2, 0, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(2, 1, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(2, 2, 0xFF).expect("couldn't turn on");
-
-        matrix.device.pixel(3, 0, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(3, 1, 0xFF).expect("couldn't turn on");
-        matrix.device.pixel(3, 2, 0xFF).expect("couldn't turn on");
-
-        matrix.device.pixel(20, 0, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(20, 1, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(16, 2, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.fill(0x00).expect("couldn't turn off");
-        delay.delay_ms(1000);
-
-        matrix.device.pixel(21, 0, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(21, 1, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(21, 2, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.fill(0x00).expect("couldn't turn off");
-        delay.delay_ms(1000);
-
-        matrix.device.pixel(22, 0, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(22, 1, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(22, 2, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.fill(0x00).expect("couldn't turn off");
-        delay.delay_ms(1000);
-
-        matrix.device.pixel(23, 0, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(23, 1, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.pixel(23, 2, 0xFF).expect("couldn't turn on");
-        delay.delay_ms(1000);
-        matrix.device.fill(0x00).expect("couldn't turn off");
-        delay.delay_ms(1000);
+        for i in 9..14 {
+            for color in 0..3 {
+                matrix.device.pixel(i, color, 0xFF).expect("couldn't turn on");
+                delay.delay_ms(1000);
+            }
+        }
 
         continue;
 
