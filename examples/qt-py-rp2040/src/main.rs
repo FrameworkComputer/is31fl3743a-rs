@@ -73,5 +73,18 @@ fn main() -> ! {
         matrix.device.fill(0xFF).expect("couldn't turn on");
         delay.delay_ms(100u32);
         matrix.device.fill(0x00).expect("couldn't turn off");
+
+        // Light up each LED, one by one
+        for y in 0..matrix.device.height {
+            for x in 0..matrix.device.width {
+                matrix
+                    .device
+                    .pixel(x, y, 0xFF)
+                    .expect("couldn't turn on");
+                delay.delay_ms(100);
+                matrix.device.pixel(x, y, 0).expect("couldn't turn off");
+            }
+        }
+        delay.delay_ms(100u32);
     }
 }
