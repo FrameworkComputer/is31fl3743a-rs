@@ -32,7 +32,7 @@ where
     pub fn fill_matrix(&mut self, brightnesses: &[u8]) -> Result<(), I2cError> {
         // Extend by one, to add address to the beginning
         let mut buf = [0x00; 0xC7];
-        buf[0] = 0x00; // set the initial address
+        buf[0] = 0x01; // set the initial register address
         buf[1..=0xC6].copy_from_slice(brightnesses);
         self.bank(Page::Pwm)?;
         self.write(&buf)?;
@@ -43,7 +43,7 @@ where
     pub fn fill(&mut self, brightness: u8) -> Result<(), I2cError> {
         self.bank(Page::Pwm)?;
         let mut buf = [brightness; 0xC7];
-        buf[0] = 0x00; // set the initial address
+        buf[0] = 0x01; // set the initial register address
         self.write(&buf)?;
         Ok(())
     }
@@ -100,7 +100,7 @@ where
     pub fn set_scaling(&mut self, scale: u8) -> Result<(), I2cError> {
         self.bank(Page::Scale)?;
         let mut buf = [scale; 0xC7];
-        buf[0] = 0x00; // set the initial address
+        buf[0] = 0x01; // set the initial register address
         self.write(&buf)?;
         Ok(())
     }
