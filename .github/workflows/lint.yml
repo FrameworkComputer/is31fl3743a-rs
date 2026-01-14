@@ -27,5 +27,9 @@ jobs:
           targets: thumbv6m-none-eabi
       - name: Clippy library
         run: cargo clippy --target thumbv6m-none-eabi --all-features -- -D warnings
-      - name: Clippy example
+      - name: Clippy qt-py-rp2040 example
         run: cargo clippy --target thumbv6m-none-eabi --manifest-path examples/qt-py-rp2040/Cargo.toml -- -D warnings
+      - name: Clippy framework16-keyboard examples
+        run: |
+          cargo clippy --target thumbv6m-none-eabi --manifest-path examples/framework16-keyboard/Cargo.toml --features keyboard -- -D warnings
+          cargo clippy --target thumbv6m-none-eabi --manifest-path examples/framework16-keyboard/Cargo.toml --features macropad -- -D warnings
