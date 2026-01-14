@@ -8,35 +8,21 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
-        id: changes
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          filters: |
-            rust:
-              - '**.rs'
-              - 'Cargo.lock'
-              - '.github/workflows/**'
-      - if: steps.changes.outputs.rust == 'true'
-        run: cargo build
+          targets: thumbv6m-none-eabi
+      - name: Build library
+        run: cargo build --target thumbv6m-none-eabi --all-features
+      - name: Build example
+        run: cargo build --target thumbv6m-none-eabi --manifest-path examples/qt-py-rp2040/Cargo.toml
 
   rustdoc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            rust:
-              - '**.rs'
-              - 'Cargo.lock'
-              - '.github/workflows/**'
-      - if: steps.changes.outputs.rust == 'true'
-        run: cargo doc
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo doc

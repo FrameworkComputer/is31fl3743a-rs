@@ -4,24 +4,21 @@
 // pick a panicking behavior
 use panic_halt as _;
 
+use embedded_hal::delay::DelayNs;
+
 use adafruit_qt_py_rp2040::entry;
 use adafruit_qt_py_rp2040::{
     hal::{
-        clocks::{init_clocks_and_plls, Clock},
-        i2c::I2C,
-        pac,
-        watchdog::Watchdog,
-        Sio,
+        clocks::init_clocks_and_plls, fugit::RateExtU32, gpio::PullUp, i2c::I2C, pac,
+        watchdog::Watchdog, Sio, Timer,
     },
     Pins, XOSC_CRYSTAL_FREQ,
 };
-use fugit::RateExtU32;
 use is31fl3743a::devices::UnknownDevice;
 
 #[entry]
 fn main() -> ! {
     let mut pac = pac::Peripherals::take().unwrap();
-    let core = pac::CorePeripherals::take().unwrap();
 
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
 
@@ -37,7 +34,7 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
-    let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
+    let mut timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
     let sio = Sio::new(pac.SIO);
     let pins = Pins::new(
         pac.IO_BANK0,
@@ -47,11 +44,11 @@ fn main() -> ! {
     );
 
     // Using STEMMA QT connector
-    let sda = pins.sda1.into_mode(); // gpio22
-    let scl = pins.scl1.into_mode(); // gpio23
+    let sda: adafruit_qt_py_rp2040::hal::gpio::Pin<_, _, PullUp> = pins.sda1.reconfigure(); // gpio22
+    let scl: adafruit_qt_py_rp2040::hal::gpio::Pin<_, _, PullUp> = pins.scl1.reconfigure(); // gpio23
 
-    //let sda = pins.sda.into_mode(); // gpio24
-    //let scl = pins.scl.into_mode(); // gpio25
+    //let sda: adafruit_qt_py_rp2040::hal::gpio::Pin<_, _, PullUp> = pins.sda.reconfigure(); // gpio24
+    //let scl: adafruit_qt_py_rp2040::hal::gpio::Pin<_, _, PullUp> = pins.scl.reconfigure(); // gpio25
 
     let i2c = I2C::i2c1(
         pac.I2C1,
@@ -64,14 +61,14 @@ fn main() -> ! {
 
     let mut matrix = UnknownDevice::configure(i2c);
     matrix
-        .setup(&mut delay)
+        .setup(&mut timer)
         .expect("failed to setup rgb controller");
 
     matrix.set_scaling(0xFF).expect("failed to set scaling");
 
     loop {
         matrix.device.fill(0xFF).expect("couldn't turn on");
-        delay.delay_ms(100u32);
+        timer.delay_ms(100);
         matrix.device.fill(0x00).expect("couldn't turn off");
     }
 }

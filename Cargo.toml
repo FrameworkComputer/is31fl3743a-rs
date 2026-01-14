@@ -10,7 +10,7 @@ repository = "https://github.com/FrameworkComputer/is31fl3743a-rs"
 readme = "README.md"
 
 [dependencies]
-embedded-hal = "0.2.7"
+embedded-hal = "1.0"
 embedded-graphics-core = { optional = true, version = "0.4.0" }
 
 [package.metadata.docs.rs]

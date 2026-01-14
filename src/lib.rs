@@ -2,9 +2,8 @@
 #![doc = include_str!("../README.md")]
 /// Preconfigured devices
 pub mod devices;
-use embedded_hal::blocking::delay::DelayMs;
-use embedded_hal::blocking::i2c::Read;
-use embedded_hal::blocking::i2c::Write;
+use embedded_hal::delay::DelayNs;
+use embedded_hal::i2c::I2c;
 
 /// A struct to integrate with a new IS31FL3743A powered device.
 pub struct IS31FL3743<I2C> {
@@ -24,8 +23,7 @@ pub struct IS31FL3743<I2C> {
 
 impl<I2C, I2cError> IS31FL3743<I2C>
 where
-    I2C: Write<Error = I2cError>,
-    I2C: Read<Error = I2cError>,
+    I2C: I2c<Error = I2cError>,
 {
     /// Fill all pixels of the display at once. The brightness should range from 0 to 255.
     /// brightness slice must have 0xC6 elements
@@ -66,7 +64,7 @@ where
     /// 2. The chip will be put in shutdown mode
     /// 3. The chip will be configured to use the maximum voltage
     /// 4. The chip will be taken out of shutdown mode
-    pub fn setup<DEL: DelayMs<u8>>(&mut self, delay: &mut DEL) -> Result<(), Error<I2cError>> {
+    pub fn setup<DEL: DelayNs>(&mut self, delay: &mut DEL) -> Result<(), Error<I2cError>> {
         self.reset(delay)?;
         self.shutdown(true)?;
         delay.delay_ms(10);
@@ -101,17 +99,14 @@ where
     /// provide which allows for the process to sleep for a certain amount of time (in this case 10
     /// MS to perform a reset).
     /// This will result in all registers being restored to their defaults.
-    pub fn reset<DEL: DelayMs<u8>>(&mut self, delay: &mut DEL) -> Result<(), I2cError> {
+    pub fn reset<DEL: DelayNs>(&mut self, delay: &mut DEL) -> Result<(), I2cError> {
         self.write_register(Page::Config, addresses::RESET_REGISTER, addresses::RESET)?;
         delay.delay_ms(10);
         Ok(())
     }
 
     /// Reset the controller and restore all registers
-    pub fn reset_restore<DEL: DelayMs<u8>>(
-        &mut self,
-        delay: &mut DEL,
-    ) -> Result<(), Error<I2cError>> {
+    pub fn reset_restore<DEL: DelayNs>(&mut self, delay: &mut DEL) -> Result<(), Error<I2cError>> {
         // Back up registers
         let prev_config = self.read_register(Page::Config, addresses::CONFIG_REGISTER)?;
         // Assumes all scaling registers are set to the same value
@@ -156,7 +151,7 @@ where
     }
 
     /// Set the PWM frequency
-    pub fn set_pwm_freq<DEL: DelayMs<u8>>(
+    pub fn set_pwm_freq<DEL: DelayNs>(
         &mut self,
         delay: &mut DEL,
         pwm: PwmFreq,
