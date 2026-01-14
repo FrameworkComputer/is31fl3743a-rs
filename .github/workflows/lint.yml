@@ -11,19 +11,21 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            rust:
-              - '**.rs'
-              - 'rustfmt.toml'
-              - '.github/workflows/**'
-      - if: steps.changes.outputs.rust == 'true'
-        uses: dtolnay/rust-toolchain@nightly
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - if: steps.changes.outputs.rust == 'true'
-        run: cargo fmt --check
+      - run: cargo fmt --check
 
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: thumbv6m-none-eabi
+      - name: Clippy library
+        run: cargo clippy --target thumbv6m-none-eabi --all-features -- -D warnings
+      - name: Clippy example
+        run: cargo clippy --target thumbv6m-none-eabi --manifest-path examples/qt-py-rp2040/Cargo.toml -- -D warnings
