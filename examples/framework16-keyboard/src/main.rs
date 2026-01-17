@@ -3,37 +3,21 @@
 //! Demonstrates controlling the IS31FL3743A LED controllers on the
 //! Framework 16 RGB Keyboard or Macropad.
 //!
-//! ## RGB Keyboard (default)
-//! - Two IS31FL3743A controllers at I2C addresses 0x20 and 0x23
-//! - SW1-SW9 active
+//! ## Default Build (works on both Keyboard and Macropad)
+//! - Tries two IS31FL3743A controllers at I2C addresses 0x20 and 0x23
+//! - SW1-SW9 active (keyboard setting, safe for macropad)
+//! - Gracefully handles missing second controller (macropad only has one)
 //! - Build with: `cargo build --release`
 //!
-//! ## Macropad
+//! ## Macropad Optimized Build
 //! - Single IS31FL3743A controller at I2C address 0x20
-//! - SW1-SW4 active
-//! - Build with: `cargo build --release --features macropad --no-default-features`
+//! - SW1-SW4 active (macropad-specific optimization)
+//! - Build with: `cargo build --release --features macropad`
 //!
 //! See the `Cargo.toml` file for Copyright and license details.
 
 #![no_std]
 #![no_main]
-
-// Require exactly one of keyboard or macropad feature
-#[cfg(all(feature = "keyboard", feature = "macropad"))]
-compile_error!("Features 'keyboard' and 'macropad' are mutually exclusive. Choose one.");
-
-#[cfg(not(any(feature = "keyboard", feature = "macropad")))]
-compile_error!("You must enable either the 'keyboard' or 'macropad' feature. Example: cargo build --features keyboard");
-
-// Stop compilation here if feature check failed - provide dummies to suppress other errors
-#[cfg(not(any(feature = "keyboard", feature = "macropad")))]
-mod dummy {
-    pub use is31fl3743a::SwSetting;
-    pub const SW_SETTING: SwSetting = SwSetting::Sw1Sw11;
-    pub const ADDR_CTRL2: u8 = 0;
-}
-#[cfg(not(any(feature = "keyboard", feature = "macropad")))]
-use dummy::*;
 
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::OutputPin;
@@ -48,21 +32,19 @@ use framework16_keyboard::{
     Pins, XOSC_CRYSTAL_FREQ,
 };
 use is31fl3743a::devices::UnknownDevice;
-#[cfg(any(feature = "keyboard", feature = "macropad"))]
 use is31fl3743a::SwSetting;
 
 /// I2C address of the first (or only) LED controller
 const ADDR_CTRL1: u8 = 0x20;
 
-/// I2C address of the second LED controller (keyboard only)
-#[cfg(feature = "keyboard")]
+/// I2C address of the second LED controller
 const ADDR_CTRL2: u8 = 0x23;
 
-/// SW enablement setting - use keyboard value unless only macropad is enabled
-#[cfg(feature = "keyboard")]
+/// SW enablement setting
+#[cfg(not(feature = "macropad"))]
 const SW_SETTING: SwSetting = SwSetting::Sw1Sw9;
 
-#[cfg(all(feature = "macropad", not(feature = "keyboard")))]
+#[cfg(feature = "macropad")]
 const SW_SETTING: SwSetting = SwSetting::Sw1Sw4;
 
 #[entry]
@@ -121,54 +103,56 @@ fn main() -> ! {
         .sw_enablement(SW_SETTING)
         .expect("failed to set SW enablement");
 
-    // Configure the second controller (keyboard only)
-    #[cfg(feature = "keyboard")]
-    {
-        matrix.device.address = ADDR_CTRL2;
-        matrix
-            .setup(&mut timer)
-            .expect("failed to setup LED controller 2");
-        matrix.set_scaling(0xFF).expect("failed to set scaling");
-        matrix
-            .device
-            .sw_enablement(SW_SETTING)
-            .expect("failed to set SW enablement");
-    }
+    // Configure the second controller (gracefully handle macropad where it's not present)
+    // Probe the address first with a simple read to avoid corrupting I2C bus state
+    let has_second_controller = {
+        use embedded_hal::i2c::I2c;
+        let mut probe = [0u8; 1];
+        let probe_result = matrix.device.i2c.read(ADDR_CTRL2, &mut probe);
+        if probe_result.is_ok() {
+            matrix.device.address = ADDR_CTRL2;
+            let _ = matrix.setup(&mut timer);
+            let _ = matrix.set_scaling(0xFF);
+            let _ = matrix.device.sw_enablement(SW_SETTING);
+            true
+        } else {
+            false
+        }
+    };
 
     // Main loop: cycle through colors
     loop {
         // Red (LED order is BGR, so red is at offset 2)
-        set_all_color(&mut matrix, 0x00, 0x00, 0x40);
+        set_all_color(&mut matrix, 0x00, 0x00, 0x40, has_second_controller);
         timer.delay_ms(500);
 
         // Green (offset 1)
-        set_all_color(&mut matrix, 0x00, 0x40, 0x00);
+        set_all_color(&mut matrix, 0x00, 0x40, 0x00, has_second_controller);
         timer.delay_ms(500);
 
         // Blue (offset 0)
-        set_all_color(&mut matrix, 0x40, 0x00, 0x00);
+        set_all_color(&mut matrix, 0x40, 0x00, 0x00, has_second_controller);
         timer.delay_ms(500);
 
         // White
-        set_all_color(&mut matrix, 0x20, 0x20, 0x20);
+        set_all_color(&mut matrix, 0x20, 0x20, 0x20, has_second_controller);
         timer.delay_ms(500);
 
         // Off
-        set_all_color(&mut matrix, 0x00, 0x00, 0x00);
+        set_all_color(&mut matrix, 0x00, 0x00, 0x00, has_second_controller);
         timer.delay_ms(500);
     }
 }
 
 /// Set all LEDs on all controllers to a specific BGR color
-fn set_all_color<I2C, E>(matrix: &mut UnknownDevice<I2C>, b: u8, g: u8, r: u8)
+fn set_all_color<I2C, E>(matrix: &mut UnknownDevice<I2C>, b: u8, g: u8, r: u8, has_second: bool)
 where
     I2C: embedded_hal::i2c::I2c<Error = E>,
 {
     matrix.device.address = ADDR_CTRL1;
     fill_color(&mut matrix.device, b, g, r);
 
-    #[cfg(feature = "keyboard")]
-    {
+    if has_second {
         matrix.device.address = ADDR_CTRL2;
         fill_color(&mut matrix.device, b, g, r);
     }

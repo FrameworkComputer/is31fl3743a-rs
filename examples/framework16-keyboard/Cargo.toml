@@ -14,7 +14,6 @@ framework16-keyboard = { git = "https://github.com/rp-rs/rp-hal-boards.git", fea
 is31fl3743a = { path = "../.." }
 
 [features]
-# RGB Keyboard: 2 controllers at 0x20 and 0x23, SW1-SW9 active
-keyboard = []
-# Macropad: 1 controller at 0x20, SW1-SW4 active
+# Macropad optimization: only configure single controller at 0x20, SW1-SW4 active
+# Without this feature, the code tries both controllers (works on keyboard and macropad)
 macropad = []
