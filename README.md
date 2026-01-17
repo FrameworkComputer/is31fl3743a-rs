@@ -11,7 +11,7 @@ Driver for [Lumissil Microsystem's IS31FL3743A integrated circuit](https://www.l
 
 1. Use of embedded HAL traits (works with any embedded device that supports the required traits). This means that this driver is platform agnostic.
 2. Library features (only turn on what devices you need to save compiled binary space).
-3. [Examples](./examples) on how to use this driver. (TODO)
+3. [Examples](./examples) for various RP2040 boards
 
 ## Install
 
@@ -19,6 +19,28 @@ To install this driver in your project add the following line to your `Cargo.tom
 
 ```toml
 is31fl3743a = "0.1.0"
+```
+
+## Examples
+
+See the [examples](./examples) directory for complete working examples:
+
+- **[qt-py-rp2040](./examples/qt-py-rp2040)** - Adafruit QT Py RP2040 with IS31FL3743A over STEMMA QT
+- **[framework16-keyboard](./examples/framework16-keyboard)** - Framework 16 RGB Keyboard (dual IS31FL3743A controllers)
+
+### Building Examples
+
+```bash
+# Install prerequisites
+rustup target add thumbv6m-none-eabi
+cargo install elf2uf2-rs
+
+# Build an example
+cd examples/framework16-keyboard
+cargo build --release
+
+# Convert to UF2
+elf2uf2-rs target/thumbv6m-none-eabi/release/is31fl3743a-framework16-keyboard firmware.uf2
 ```
 
 ## Graphics

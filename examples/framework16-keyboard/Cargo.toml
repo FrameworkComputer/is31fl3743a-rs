@@ -1,0 +1,20 @@
+[package]
+edition = "2021"
+name = "is31fl3743a-framework16-keyboard"
+version = "0.1.0"
+
+[dependencies]
+embedded-hal = "1.0"
+
+cortex-m-rt = "0.7.5"
+cortex-m = "0.7.7"
+panic-halt = "1.0.0"
+framework16-keyboard = { git = "https://github.com/rp-rs/rp-hal-boards.git", features = ["rt"] }
+
+is31fl3743a = { path = "../.." }
+
+[features]
+# RGB Keyboard: 2 controllers at 0x20 and 0x23, SW1-SW9 active
+keyboard = []
+# Macropad: 1 controller at 0x20, SW1-SW4 active
+macropad = []
